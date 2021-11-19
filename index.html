@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故障检测</title>
+    
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="index.css">
+    <link rel="icon" href="images/LOGO.png" type="image/gif" >
+</head>
+<body>
+<div id="app" v-cloak>
+<div class="content">
+
+    <div class="logo">
+        <div class="logoimg">
+            <img src="images/LOGO.png" alt="">
+        </div> 
+        <div class="logotext">
+            化工过程故障检测智能平台
+        </div>
+    </div>
+
+    <div class="title-select">
+        
+        <div class="open">
+            <div class="open-litle" @click="newShow=true">
+                <div  class="litle-image">
+                    <img src="images/新建.png">
+                </div>
+                <div class="litle-text">新建</div>
+            </div>
+            <div class="open-litle" @click="labelShow=true">
+                <div  class="litle-image">
+                    <img src="images/待监测点.png">
+                </div>
+                <div class="litle-text">测点标注</div>
+            </div>
+            <div class="open-litle"  @click="describeShow=true">
+                <div  class="litle-image">
+                    <img src="images/提示.png">
+                </div>
+                <div class="litle-text">故障配置</div>
+            </div>
+            <!-- <div class="open-litle">
+                <div  class="litle-image" @click="Drill">
+                    <img src="images/shangchuan.png" alt="">
+                </div>
+                <div class="litle-text">训练</div>
+            </div> -->
+            <div class="open-litle">
+                <div  class="litle-image" @click="clear">
+                    <img src="images/清除.png" alt="">
+                </div>
+                <div class="litle-text">全部清除</div>
+            </div>
+        </div>
+        <div class="select">
+            <div class="open-litle">
+                <div class="litle-text">选择算法</div>  
+            </div> 
+            <div class="litle-select">
+                <el-select v-model="arithmeticSelect" placeholder="请选择检测算法" class="litle-select-content">
+                    <el-option
+                      v-for="item in arithmetic"
+                      :value="item">
+                    </el-option>
+                  </el-select>
+
+            </div>
+            <div class="select-super">
+                <div class="select-super-image" @click="ismatching">
+                    <img src="images/匹配.png" alt="">
+                </div>
+                <div @click="ismatching">
+                    智能匹配
+                </div>
+                <div class="select-super-image" @click="Search">
+                    <img src="images/搜索.png" alt="">
+                </div>
+                <div @click="Search">
+                    算法搜索
+                </div>
+            </div>
+        </div>
+        <div class="run drill" >
+            <div  class="litle-image" @click="isDrill">
+                <img src="images/训练2.png" alt="">
+            </div>
+            <div class="litle-text">训练</div>
+        </div>
+        <input class="file" id="xfile" name="file" type="file" @change="updatefile" style="visibility:hidden"/>
+            <div class="run drill" onclick="xfile.click()">
+            <div  class="litle-image" >
+                <img src="images/choice.png" alt="">
+            </div>
+            <div class="litle-text">模型</div>
+        </div>
+        <div class="run ">
+            <div  class="litle-image"  @click="isTesto">
+                <img src="images/测试.png" alt="">
+            </div>
+            <div class="litle-text">测试</div>               
+        </div>
+        
+        
+        <div class="help" @click="help">
+            <div  class="litle-image">
+                <img src="images/help.png" alt="">
+            </div>
+            <div class="litle-text">
+               帮助
+            </div>
+        </div>
+        
+    </div>
+    <div class="padding">
+        <div>文 件</div>
+        <div>算 法</div>
+        <div>操 作</div>
+        <div>引 导</div>
+    </div>
+    <div class="present">
+        <!-- 故障图部分 -->
+        <div class="process">
+            <div class="process-head">
+                化工反应流程图
+            </div>
+            <div class="process-image" > 
+                <img v-if="!flowChartUrl" src="./images/添加图片.png" class="process-image1">
+                <img v-if="flowChartUrl" :src="flowChartUrl" class="process-image2">
+            </div>
+            <div class="mark" @mousemove="move">
+                <span v-for="item in faultData" :style="{'top':item.top, 'left':item.left,}" @click="labelShow=true,startdrag=false">{{item.mdata}}</span>
+            </div>
+        </div>
+        <!-- 故障检测结果部分 -->
+        <div class="result">
+            <div class="result-head">
+                运行结果
+            </div>
+            <div class="result-content">
+
+                <div class="indicator">
+                    <div class="indicator-image">
+                        <img :src="getImage()" alt="">
+                    </div>
+                    <div :class="indicatorText" >
+                        {{indicatortext}}
+                    </div>
+                </div>
+                <!-- 数据组 -->
+                <div class="data-set">
+                    <span class="fault-image">
+                        <img src="images/数据组.png" alt="">
+                    </span>
+                    <span class="fault-headline">对象名称 :</span>
+                    <span class="datacontent">
+                            {{objectName}}
+                    </span>
+                </div>
+                <!-- 描述 -->
+                <div class="process-descrp">
+                    <span class="fault-image">
+                        <img src="images/标注.png" alt="">
+                    </span>
+                    <span class="fault-headline">过程描述 :</span>
+                    <div class="fault-content"style='display:block;word-break: break-all;word-wrap: break-word;padding:10px; margin-botton:10px'>
+                            {{desprocess}} 
+                    </div>
+                </div>
+                <!-- 时间 -->
+                <div class="time-samples">
+                    <span class="fault-image">
+                        <img src="images/time.png" alt="">
+                    </span>
+                    <span class="fault-headline">时间周期 :</span>
+                    <span class="datacontent">
+                            {{datatimes}} s
+                    </span>
+                </div>
+                
+                <!-- 算法 -->
+                <div class="fault-arithmetic">
+                    <span class="fault-image">
+                        <img src="images/xuanze.png" alt="">
+                    </span>
+                    <span class="fault-headline">检测算法 :</span>
+                    <!--div class="fault-content"-->
+                    <span class="datacontent">{{arithmeticSelect}}</span>
+                            
+                    <!--/div-->
+                </div>
+                <!-- 故障 -->
+                <div class="fault">
+                    <span class="fault-image">
+                        <img src="images/bug.png" alt="">
+                    </span>
+                    <span class="fault-headline" >故障描述 :</span>
+                    <div :class="faultCss"style='width: 370px;display:block;word-break: break-all;word-wrap: break-word;'>
+                            {{faultContent}}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<!-- new弹窗 -->
+<div class="new-mark" v-show="newShow">
+    <div class="new-input-content">
+        
+        <div class="new-big2">
+            <div class="new-head">对象设置</div>
+            <div class="object">
+                <span class="text">对象名称</span>
+                <span>
+                    <el-input type="text" v-model="objectName" placeholder="请输入对象名称" class="objectinput"></el-input>
+                </span>
+            </div>
+            <div class="object">
+                <span class="text">过程描述</span>
+                <span>
+                    <el-input type="textarea" maxlength="100" resize=none :rows="4" v-model="desprocess" placeholder="请输入化工反应过程描述" class="desinput"  ></el-input>
+                </span>
+            </div>
+            
+        </div>
+        
+        <div class="new-big">
+            <div class="new-head">时间参数</div>
+            <div class="new-content">
+                <span>
+                    <span class="text">训练阈值</span>
+                    <span>
+                        <el-input v-model="varNumber" class="parainput" placeholder="秒"></el-input>
+                       
+                    </span>
+                </span>
+                <span>
+                    <span class="text">测试周期</span>
+                    <span>
+                        <el-input v-model="interval" class="parainput" placeholder="秒"></el-input>
+                    </span>   
+                </span>
+    
+            </div>
+        </div>
+        
+
+        <div class="new-big">
+            
+            <div class="new-head">测试样本</div>
+            <div class="new-content">
+                <span class="file_selarea">
+                    <el-select v-model="formatsel" placeholder="请选择文件格式"  style="width: 200px;left: 10px;">
+                        <el-option
+                          v-for="item in formats"
+                          :key="item.fvalue"
+                          :label="item.label"
+                          :value="item.fvalue"
+                          >
+                        </el-option>
+                      </el-select>
+                </span>
+                     <span class="new-content-button button" >
+                        
+                        <el-upload
+                        style="width: 100%;height: 100%;"
+                        action='http://127.0.0.1:5000/updf'
+                        :show-file-list="false"
+                        id="import"
+                        :on-change="handleAvatarSuccess2"
+                        >
+                        上传文件
+                    </el-upload>
+                </span>
+                
+            </div>
+        </div>
+        <div class="new-big">
+            <div class="new-head">化工流程图</div>
+            <div class="new-content">
+                <span class="file_selarea">
+                    <el-select v-model="value" placeholder="请选择预置流程图" style="width: 200px;left: 10px;">
+                        <el-option
+                          v-for="item in options"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                          >
+                        </el-option>
+                      </el-select>
+                </span>
+                <span class="new-content-button button" >
+                    <el-upload
+                        style="width: 100%;height: 100%;"
+                        action="#"
+                        :show-file-list="false"
+                        id="import"
+                        :on-change="handleAvatarSuccess"
+                        >
+                        上传图片
+                    </el-upload> 
+                </span>
+                
+            </div>
+        </div>
+        <div class="new-big">
+            <span class="new-cancel button" @click="Cancel">取消</span>
+            <span class="new-determine button" @click=" judge">确定</span>
+        </div>
+    </div>
+</div>
+<!-- 测点标注弹窗 -->
+    <div class="label-mark" v-show="labelShow">
+
+        <i class="el-icon-close" @click="ClearlabelShow"></i>
+
+        <div class="label-mark-content">
+            <el-table
+                :data="labelData"
+                border
+                :header-cell-style="{color:'#333',fontFamily:'MicrosoftYaHeiUI',fontSize:'16px',fontWeight:900}"
+                style="width: 100%">
+                <el-table-column
+                  label="特征编号"
+                  width="120">
+                  <template slot-scope="scope">
+                    <el-input v-model="scope.row.lID" style="width: 60px"></el-input>
+
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  label="锚点位置"
+                  width="120">
+                  <template slot-scope="scope">
+                        
+                        <el-tag 
+                        size="medium" 
+                        style="cursor: pointer;" 
+                        @click="graspPosition(scope.$index,$event)">
+                            <i class="el-icon-aim" style="width: 70px;text-align: center;"></i>
+                        </el-tag>
+
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作">
+                  <template slot-scope="scope">
+                    <el-button
+                      size="mini"                  
+                      @click="labelDelete(scope.$index, scope.row)">删除</el-button>
+                  </template>
+                </el-table-column>
+            </el-table>
+            <el-button
+            @click="labelShow=false"
+            type="primary" 
+            style="
+            line-height: 12px;
+            height: 35px;
+            float: right;
+            bottom: 0;
+            margin-top:5px;
+            "
+            >确定</el-button>
+            
+
+            <el-button
+            @click="labelNew"
+            type="primary" 
+            style="
+            line-height: 12px;
+            height: 35px;
+            float: right;
+            bottom: 0;
+            margin-top:5px;
+            margin-right: 10px;
+            "
+            >新建</el-button>
+        </div>
+    </div>
+<!-- 故障描述 -->
+<div class="describe-mark" v-show="describeShow">
+    <i class="el-icon-close" @click="ClearDescrible"></i>
+
+    <div class="describe-mark-content">
+        <el-table
+            :data="describeDatas"
+            border
+            :header-cell-style="{color:'#333',fontFamily:'MicrosoftYaHeiUI',fontSize:'16px',fontWeight:900}"
+            style="width: 100%">
+            <el-table-column
+              label="故障编号"
+              width="105">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.dID" style="width: 60px"></el-input>
+
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              label="故障描述"
+              width="555">
+              <template slot-scope="scope">
+                    
+                <el-input
+                class="describe-textarea"
+                type="textarea"
+                :rows="1"
+                placeholder="请输入对应编号的故障描述"
+                v-model="scope.row.content">
+                </el-input>   
+
+              </template>
+            </el-table-column>
+            <el-table-column label="故障样本" width="92">
+                <template slot-scope="scope">
+                  
+                    <el-button
+                    size="mini"                  
+                    onclick="xfile.click()">上传</el-button>
+                    
+                </template>
+              </el-table-column>
+            <el-table-column label="操作" width="77">
+              <template slot-scope="scope">
+                
+                  
+                  <el-button
+                  size="mini"                  
+                  @click="describeDelete(scope.$index, scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
+        </el-table>
+        <el-button
+        @click="describeShow=false"
+        type="primary" 
+        style="
+        line-height: 12px;
+        height: 35px;
+        float: right;
+        bottom: 0;
+        margin-top:5px;
+        "
+        >确定</el-button>
+
+        <el-button
+        @click="describeNew"
+        type="primary" 
+        style="
+        line-height: 12px;
+        height: 35px;
+        float: right;
+        bottom: 0;
+        margin-top:5px;
+        margin-right: 10px;
+        "
+        >新建</el-button>
+    </div>
+</div>
+
+<!-- <input type="file" id="file1" hidden @change="fileChange1" webkitdirectory>
+<input type="file" id="file2" hidden @change="fileChange2" webkitdirectory> -->
+
+</div>
+
+
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<!-- <script src="../../vue.js"></script> -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script src="./index.js"></script>
+</body>
+</html>
